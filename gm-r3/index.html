@@ -502,6 +502,7 @@ if(PEOPLE[pk]){
   const last=lsGet("who"); if(PEOPLE[last])selectWho(last);
 }
 window.addEventListener("beforeunload",e=>{if(dirty){e.preventDefault();e.returnValue=""}});
+window.addEventListener("hashchange",()=>location.reload());
 })();
 </script>
 </body>

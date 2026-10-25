@@ -2,7 +2,7 @@
 
 Landings públicas con formulario, servidas con GitHub Pages. Cada landing es una carpeta con un solo `index.html`. Las respuestas se guardan en Supabase, en la tabla `public.respuestas`.
 
-La raíz (`/`) no enlaza ninguna landing: cada una se comparte solo por su link directo, por ejemplo `https://<usuario>.github.io/landings/ensayo/`. Todas llevan `noindex` para que no aparezcan en buscadores.
+La raíz (`/`) no enlaza ninguna landing: cada una se comparte solo por su link directo, por ejemplo `https://presidencia-prestigio.github.io/landings/ensayo/`. Todas llevan `noindex` para que no aparezcan en buscadores.
 
 ## Estructura
 
@@ -11,7 +11,10 @@ La raíz (`/`) no enlaza ninguna landing: cada una se comparte solo por su link 
 | `index.html` | Portada neutra. No lista las landings. |
 | `_plantilla/` | Plantilla base. **No acepta envíos** (`activo: false`). |
 | `ensayo/` | Primera landing. Guarda con la etiqueta `formulario = "ensayo"`. |
+| `gm-r3/` | Formulario confidencial de remuneración (Reto 3). Guarda con `formulario = "minondo-r3"`. Requiere `002_respuestas_tamano.sql`. |
 | `supabase/001_respuestas.sql` | Tabla, permisos y política RLS. |
+| `supabase/002_respuestas_tamano.sql` | Sube el límite de `respuestas` a 32 KB para formularios largos. |
+| `supabase/003_advisor_rls_auto_enable.sql` | Corrige los avisos del Security Advisor. |
 | `.nojekyll` | Evita que GitHub Pages oculte las carpetas que empiezan con `_`. |
 
 ## Crear una landing nueva
@@ -30,7 +33,7 @@ La raíz (`/`) no enlaza ninguna landing: cada una se comparte solo por su link 
 - La `publishableKey` es pública por diseño. Lo que protege los datos son los permisos de la tabla:
   - El rol `anon` solo puede **insertar** en `formulario`, `nombre`, `correo`, `telefono` y `respuestas`.
   - Nadie anónimo puede leer, actualizar ni borrar. Tampoco puede fijar `id` ni `creado_en`.
-  - La política RLS y las restricciones `CHECK` limitan el largo de cada campo y exigen que `respuestas` sea un objeto de máximo 8 KB.
+  - La política RLS y las restricciones `CHECK` limitan el largo de cada campo y exigen que `respuestas` sea un objeto de máximo 32 KB.
 - Nunca pongas la **secret key** (`sb_secret_...`) ni la `service_role` en una landing.
 - Contra bots: un campo trampa oculto (honeypot) y un tiempo mínimo de 4 segundos. Si alguno se activa, la landing muestra "gracias" y no envía nada.
 
@@ -52,3 +55,18 @@ order by creado_en desc;
 - Si el JavaScript no corre (por ejemplo, en una vista previa), se ve el título y un aviso para abrir el link en el navegador.
 - Respeta `prefers-reduced-motion`: sin animaciones si el sistema lo pide.
 - Si el envío falla, muestra un aviso y conserva las respuestas para reintentar.
+
+## Respuestas de gm-r3 (la más reciente por persona)
+
+Cada persona entra con un link personal (`gm-r3/#nombre-código`). El código queda guardado en `respuestas->>'codigo'` para comprobar que el envío vino de ese link.
+
+```sql
+select distinct on (respuestas->>'persona')
+  respuestas->>'persona' as persona,
+  respuestas->>'codigo'  as codigo,
+  creado_en,
+  jsonb_pretty(respuestas->'vals') as respuestas
+from public.respuestas
+where formulario = 'minondo-r3'
+order by respuestas->>'persona', creado_en desc;
+```

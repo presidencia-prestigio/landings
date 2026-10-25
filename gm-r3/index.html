@@ -200,8 +200,8 @@ body{margin:0}
 "use strict";
 /* ---------- schema ---------- */
 const PEOPLE = {
-  javier:{name:"Javier", note:"y datos de Roberto"},
-  roberto:{name:"Roberto", note:""},
+  javier:{name:"Javier", note:""},
+  roberto:{name:"Roberto", note:"lo llena Javier"},
   irene:{name:"Irene", note:""},
   lucia:{name:"Lucía", note:""},
   paulina:{name:"Paulina", note:""}
@@ -227,7 +227,7 @@ function adicFields(p){
     items:ADIC.map(([k,l])=>({id:p+"_adic_"+k,label:l})), extra:{id:p+"_adic_detalle",label:"Si pusiste «Otros», ¿cuáles son?"}};
 }
 function directorSections(p,nombre){
-  const nota = p==="rob" ? "Javier, esta parte la llenas tú con la información de Roberto." : undefined;
+  const nota = p==="rob" ? "Datos de Roberto. Los llenas tú, Javier." : undefined;
   return [
   {tag:nombre+" · Rol 1", title:"Director en Deconsa", sub:nota, fields:[
     {id:p+"_dir_fijo",type:"money",label:"Salario fijo mensual 2026"},
@@ -276,32 +276,32 @@ const SIS = {
 function schemaFor(who){
   if(who==="javier"){
     return {
-      intro:{h:"Javier, gracias por consolidar tus datos y los de Roberto",
-        p:["En este formulario tú llenas tu información y también la de Roberto: salario fijo, adicionales, variable y dedicación de cada uno, en sus dos roles (Director en Deconsa y Miembro de la Junta Directiva).",
-           "Para los roles de Deconsa sí hay mercado: el estudio de Mercer y el job pricing 2026. Por eso pedimos el dato exacto de 2026.",
-           "Roberto no llena cifras. Las llenas tú por él."]},
+      intro:{h:"Javier, este link es para tus datos",
+        p:["Aquí llenas solo tu información de 2026, en tus dos roles: Director en Deconsa y Miembro de la Junta Directiva.",
+           "Los datos de Roberto van en el otro link que te enviamos, el que termina en #roberto. Son dos envíos separados: primero este, luego el de Roberto.",
+           "Para los roles de Deconsa sí hay mercado (estudio de Mercer y job pricing 2026). Por eso pedimos el dato exacto."]},
       sections:[
         {tag:"Antes de empezar", title:"Moneda", fields:[moneda]},
         ...directorSections("jav","Javier"),
-        ...directorSections("rob","Roberto"),
-        {tag:"Otros roles", title:"Otros roles remunerados en el grupo", fields:[
-          {id:"otros_roles",type:"textarea",full:1,label:"Consejo de Administración WG u otros comités, para ti y para Roberto",help:"Rol, forma de pago y monto."}]},
+        {tag:"Otros roles", title:"Tus otros roles remunerados en el grupo", fields:[
+          {id:"jav_otros_roles",type:"textarea",full:1,label:"Consejo de Administración WG u otros comités",help:"Rol, forma de pago y monto. Si no tienes, déjalo en blanco."}]},
+        {tag:"Tu mirada", title:"Variable", fields:[
+          {id:"jav_var_ideal",type:"textarea",full:1,label:"¿Cómo crees que debería definirse el variable de los directores?",help:"Indicadores, umbral, techo y quién lo aprueba."}]},
         {tag:"Para ti", title:"Tu reflexión", fields:REFLEX}
       ]};
   }
   if(who==="roberto"){
     return {
-      intro:{h:"Roberto, gracias por tu tiempo",
-        p:["Javier nos envía las cifras de tu compensación 2026. Aquí te pedimos lo que solo tú puedes contarnos: tu rol, tu dedicación y cómo crees que debería definirse tu variable."]},
+      intro:{h:"Javier, aquí llenas los datos de Roberto",
+        p:["Este es el link de Roberto. Lo llenas tú, con sus cifras de 2026 en sus dos roles: Director de Operaciones en Deconsa y Miembro de la Junta Directiva.",
+           "Tus propios datos van en tu link, el que termina en #javier. Si todavía no lo has enviado, hazlo allá."]},
       sections:[
-        {tag:"Tu rol", title:"Rol y dedicación", fields:[
-          {id:"rob_desc",type:"textarea",full:1,label:"¿Cómo describes tu rol y tus principales responsabilidades en Deconsa?"},
-          {id:"rob_horas_dir",type:"number",unit:"h/sem",label:"Horas por semana como Director de Operaciones"},
-          {id:"rob_horas_jd",type:"number",unit:"h/mes",label:"Horas al mes en la Junta Directiva"}]},
-        {tag:"Tu variable", title:"Variable y compensación", fields:[
-          {id:"rob_var",type:"textarea",full:1,label:"¿Cómo crees que debería definirse tu variable?",help:"Indicadores, umbral, techo y quién lo aprueba."},
-          {id:"rob_precisar",type:"textarea",full:1,label:"¿Hay algo de tu compensación actual que quieras precisar?"}]},
-        {tag:"Para ti", title:"Tu reflexión", fields:REFLEX}
+        {tag:"Antes de empezar", title:"Moneda", fields:[moneda]},
+        ...directorSections("rob","Roberto"),
+        {tag:"Otros roles", title:"Otros roles remunerados de Roberto", fields:[
+          {id:"rob_otros_roles",type:"textarea",full:1,label:"Consejo de Administración WG u otros comités",help:"Rol, forma de pago y monto. Si no tiene, déjalo en blanco."}]},
+        {tag:"Notas", title:"Observaciones", fields:[
+          {id:"rob_notas",type:"textarea",full:1,label:"¿Algo que debamos saber sobre la compensación de Roberto?",help:"Opcional."}]}
       ]};
   }
   const cfg = SIS[who];
@@ -460,7 +460,7 @@ async function save(){
   if(!who||busy)return;
   if(document.getElementById("sitio_web").value||Date.now()-cargado<5000){gracias();return}
   const fila={formulario:CONFIG.formulario,nombre:PEOPLE[who].name,correo:null,telefono:null,
-    respuestas:{persona:who,codigo:codigo,enviado_en:new Date().toISOString(),vals:JSON.parse(JSON.stringify(vals))}};
+    respuestas:{persona:who,lleno_por:(who==="roberto"?"javier":who),codigo:codigo,enviado_en:new Date().toISOString(),vals:JSON.parse(JSON.stringify(vals))}};
   const body=JSON.stringify(fila);
   if(new Blob([body]).size>MAX_BYTES){showFallback("Tus respuestas son más largas de lo que el formulario puede enviar de una vez. Acorta los textos más largos e inténtalo de nuevo.");return}
   busy=true; const btn=$("#btn-send"); btn.disabled=true; btn.textContent="Enviando…"; setSaved("Enviando…");
@@ -479,7 +479,8 @@ function gracias(){
   setSaved("Enviado "+fmt(now));
   const r=$("#result"); r.textContent="";
   const n=el("div","note ok");
-  n.appendChild(el("strong",null,"Gracias, "+PEOPLE[who].name+". Tus respuestas llegaron a Prestigio."));
+  n.appendChild(el("strong",null,who==="roberto"?"Gracias, Javier. Los datos de Roberto llegaron a Prestigio.":"Gracias, "+PEOPLE[who].name+". Tus respuestas llegaron a Prestigio."));
+  if(who==="javier") n.appendChild(el("p",null,"Ahora abre el link de Roberto (el que termina en #roberto) para llenar sus datos."));
   n.appendChild(el("p",null,"Si quieres corregir algo, vuelve a este link desde este mismo dispositivo, ajusta y envía de nuevo. Tomaremos la versión más reciente."));
   r.appendChild(n); r.scrollIntoView({behavior:"smooth",block:"start"});
 }
@@ -494,9 +495,9 @@ if(PEOPLE[pk]){
   selectWho(pk);
   $("#chips").hidden=true;
   const sub=$("#who-sub"); sub.className="who-fixed"; sub.textContent="";
-  sub.appendChild(document.createTextNode("Respondes como "));
-  sub.appendChild(el("b",null,PEOPLE[pk].name+"."));
-  if(PEOPLE[pk].note) sub.appendChild(document.createTextNode(" Incluye los datos de Roberto."));
+  if(pk==="roberto"){sub.appendChild(document.createTextNode("Javier, estás llenando los datos de "));sub.appendChild(el("b",null,"Roberto."));}
+  else{sub.appendChild(document.createTextNode("Respondes como "));sub.appendChild(el("b",null,PEOPLE[pk].name+"."));}
+  
 }else{
   const last=lsGet("who"); if(PEOPLE[last])selectWho(last);
 }
